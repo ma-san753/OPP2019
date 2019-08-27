@@ -5,35 +5,41 @@ const socketio = require("socket.io");
 const io = socketio(http);
 const geolib = require("geolib");
 
-
-/* app.get("/", function (req, res) {
-  res.sendFile(__dirname + "/index.html");
-  console.log("Request for index.html was received.");
-});
-
-app.get("/index.js", function (req, res) {
-  res.sendFile(__dirname + "/index.js");
-  console.log("Request for index.js was received.");
-})
-
-app.get("/output.html", function (req, res) {
-  res.sendFile(__dirname + "/output.html");
-  console.log("Request for output.html was received.")
-})
-
-app.get("/output.js", function (req, res) {
-  res.sendFile(__dirname + "/output.js");
-  console.log("Request for output.js was received.");
-}) */
-
-/*緯度: 35.689775 経度: 139.78256*/
-
+//ミスト装置の位置
 const mistLocation = {
   latitude: 35.689775,
   longitude: 139.78256
 }
+//何メートル以内のデータを有効とするか
+const emitDistance = 1000000;
+//何ミリ秒以内のデータを有効とするか
+const emitTime = 60000;
+//何件有効なデータがたまったらミスト装置をONにするか
+const emitDataNum = 10;
+//何ミリ秒間隔で有効なデータを探すか
+const emitInterval = 1000;
 
+//データ保存用配列
 const storedData = [];
+
+function searchData() {
+  const nowDate = new Date;
+
+  const searchedData = storedData.filter(function(queryData) {
+    return queryData.distance < emitDistance && nowDate.getTime() - queryData.date.getTime() < emitTime;
+  });
+  console.log(searchedData);
+  
+  if(searchedData.length > emitDataNum) {
+    io.emit("ON", "ON");
+    console.log("mist ON");
+  } else {
+    io.emit("OFF", "OFF");
+    console.log("mist OFF");
+  }
+}
+
+setInterval(searchData, emitInterval);
 
 io.on("connection", function (socket) {
   console.log("a user connected");
@@ -41,21 +47,21 @@ io.on("connection", function (socket) {
   socket.on("send", function (receivedData) {
     const senderLocation = {latitude: receivedData.latitude, longitude: receivedData.longitude};
     const distance = geolib.getDistance(mistLocation, senderLocation, 0.1);
-    const nowDate = new Date;
-    const data = {humidity: receivedData.humidity, latitude: receivedData.latitude, longitude: receivedData.longitude, distance: distance, date: nowDate};
+    const storeDate = new Date;
+    const data = {humidity: receivedData.humidity, latitude: receivedData.latitude, longitude: receivedData.longitude, distance: distance, date: storeDate};
     storedData.push(data);
-
-    const searchedData = storedData.filter(function(queryData) {
-      queryData.distance < 10 && nowDate.now() - queryData.date.now < 60000;
-    });
-    
-    if(searchedData.length < 10) {
-      io.emit("move", "MOVE");
-    }
+    console.log(data);
+    console.log(storedData);
+    console.log(data.distance);
+    console.log(data.date.getTime());
   })
 
-  socket.on("test", function (data) {
-    console.log(data);
+  socket.on("sendON", function (data) {
+    io.emit("ON", "ON");
+  })
+
+  socket.on("sendOFF", function (data) {
+    io.emit("OFF", "OFF");
   })
 
   socket.on("disconnect", function () {
