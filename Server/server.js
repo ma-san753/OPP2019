@@ -1,5 +1,17 @@
-const express = require("express");
-const app = express();
+/*Used Libraries
+  Express (MIT Licence)
+    Copyright (c) 2009-2014 TJ Holowaychuk <tj@vision-media.ca>
+    Copyright (c) 2013-2014 Roman Shtylman <shtylman+expressjs@gmail.com>
+    Copyright (c) 2014-2015 Douglas Christopher Wilson <doug@somethingdoug.com>
+
+  Socket.io (MIT Licence)
+    Copyright (c) 2014-2018 Automattic <dev@cloudup.com>
+
+  Geolib (MIT Licence)
+    Copyright (c) 2018 Manuel Bie
+*/
+
+const app = require('express')();
 const http = require("http").createServer(app);
 const socketio = require("socket.io");
 const io = socketio(http);
@@ -50,10 +62,6 @@ io.on("connection", function (socket) {
     const storeDate = new Date;
     const data = {humidity: receivedData.humidity, latitude: receivedData.latitude, longitude: receivedData.longitude, distance: distance, date: storeDate};
     storedData.push(data);
-    console.log(data);
-    console.log(storedData);
-    console.log(data.distance);
-    console.log(data.date.getTime());
   })
 
   socket.on("sendON", function (data) {
